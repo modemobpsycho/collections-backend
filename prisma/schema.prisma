@@ -1,0 +1,92 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL_LOCALHOST")
+}
+
+model User {
+  id           Int      @id @default(autoincrement())
+  email        String   @unique
+  fullName     String
+  role         Int
+  access       Boolean
+  refreshToken String
+  password     String
+  lastLogin    DateTime @default(now())
+  joinDate     DateTime
+
+  collections Collection[]
+}
+
+model Collection {
+  id           Int          @id @default(autoincrement())
+  title        String
+  description  String
+  theme        String
+  photoPath    String
+  creationDate DateTime
+  userId       Int
+  user         User         @relation(fields: [userId], references: [id])
+  items        Item[]
+  fields       ItemFields[]
+}
+
+model Item {
+  id           Int          @id @default(autoincrement())
+  name         String
+  creationDate DateTime
+  collectionId Int
+  collection   Collection   @relation(fields: [collectionId], references: [id])
+  tags         Tag[]
+  comments     Comment[]
+  likes        Reaction[]
+  ItemFields   ItemFields[]
+}
+
+model Tag {
+  id    Int    @id @default(autoincrement())
+  tag   String
+  items Item[]
+}
+
+model Comment {
+  id           Int      @id @default(autoincrement())
+  textComment  String
+  userId       Int
+  userFullname String
+  creationDate DateTime
+  itemId       Int
+  item         Item     @relation(fields: [itemId], references: [id])
+}
+
+model ItemFields {
+  id                 Int         @id @default(autoincrement())
+  fieldName          String
+  stringFieldValue   String?
+  doubleFieldValue   Int?
+  datetimeFieldValue DateTime?
+  boolFieldValue     Boolean?
+  itemId             Int
+  collectionId       Int?
+  item               Item        @relation(fields: [itemId], references: [id])
+  Collection         Collection? @relation(fields: [collectionId], references: [id])
+
+}
+
+model Reaction {
+  id           Int      @id @default(autoincrement())
+  userId       Int
+  isLike       Boolean
+  creationDate DateTime
+  itemId       Int
+  item         Item     @relation(fields: [itemId], references: [id])
+}

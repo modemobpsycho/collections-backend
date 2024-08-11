@@ -22,3 +22,10 @@ export interface IUserRegisterInfo {
     saltedPassword: string;
     fullName: string;
 }
+
+export interface IUserUpdateInfo {
+    email: string;
+    fullName: string;
+    oldPassword: string;
+    newPassword: string;
+}

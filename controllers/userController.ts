@@ -6,6 +6,7 @@ import bcrypt from 'bcrypt';
 import IUser from '../types/user.interface';
 import IUserJwtPayload from '../types/userJwtPayload';
 import { constants } from '../helpers/constants';
+import { decode, JwtPayload } from 'jsonwebtoken';
 
 const tokenService = new TokenService();
 const salt = MyConfig.SALT;
@@ -87,9 +88,85 @@ export const loginUser = async (req: Request, res: Response) => {
             maxAge: constants.maxAgeCookie
         });
 
-        return res.status(200).json({ accessToken });
+        return res.status(200).json(accessToken);
     } catch (error) {
         console.error('Error during login:', error);
+        return res.status(500).json({ message: 'Internal Server Error' });
+    }
+};
+
+export const updateUser = async (req: Request, res: Response) => {
+    try {
+        const { email, fullName, oldPassword, newPassword } = req.body;
+        const { authorization } = req.headers;
+
+        const oldPayload = decode(authorization?.slice(7) as string);
+
+        if (!oldPayload) {
+            return res.status(401).json({ message: 'Unauthorized' });
+        }
+
+        const user = await prismaClient.user.findUnique({
+            where: { email: (oldPayload as JwtPayload).email }
+        });
+
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        const isPasswordValid = await bcrypt.compare(oldPassword, user.password);
+        if (!isPasswordValid) {
+            return res.status(401).json({ message: 'Invalid password' });
+        }
+
+        const hashedPassword = await bcrypt.hash(newPassword, salt!);
+
+        await prismaClient.user.update({
+            where: { id: user.id },
+            data: { fullName, email, password: hashedPassword }
+        });
+
+        const payload = { fullName: user.fullName, email: user.email };
+        const accessToken = tokenService.generateAccessToken(payload);
+        const refreshToken = tokenService.generateRefreshToken(payload);
+
+        res.cookie('refreshToken', refreshToken, {
+            httpOnly: true,
+            secure: true,
+            maxAge: constants.maxAgeCookie
+        });
+
+        return res.status(200).json(accessToken);
+    } catch (error) {
+        console.error('Error during user update:', error);
+        return res.status(500).json({ message: 'Internal Server Error' });
+    }
+};
+
+export const getCurrentUser = async (req: Request, res: Response) => {
+    try {
+        const { authorization } = req.headers;
+
+        if (!authorization) {
+            return res.status(401).json({ message: 'Unauthorized' });
+        }
+
+        const payload = decode(authorization?.slice(7) as string);
+        if (!payload) {
+            return res.status(401).json({ message: 'Unauthorized' });
+        }
+
+        const user = await prismaClient.user.findUnique({
+            where: { email: (payload as JwtPayload).email }
+        });
+
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        return res.status(200).json(user);
+    } catch (error) {
+        console.error('Error during getting current user:', error);
         return res.status(500).json({ message: 'Internal Server Error' });
     }
 };

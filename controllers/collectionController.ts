@@ -7,10 +7,19 @@ import fs from 'fs';
 
 const photoPath = MyConfig.PHOTO_PATH;
 
-export const getCollections = async (req: Request, res: Response) => {
+export const getAllCollections = async (req: Request, res: Response) => {
     try {
         const collections = await prismaClient.collection.findMany({
-            orderBy: { id: 'asc' }
+            orderBy: { id: 'asc' },
+            include: {
+                user: true,
+                collectionFields: true,
+                items: {
+                    include: {
+                        likes: true
+                    }
+                }
+            }
         });
         res.send(collections);
     } catch (error: Error | any) {
@@ -19,10 +28,102 @@ export const getCollections = async (req: Request, res: Response) => {
     }
 };
 
+export const getMyCollections = async (req: Request, res: Response) => {
+    try {
+        const { AUTH_userId } = req.body;
+        const collections = await prismaClient.collection.findMany({
+            where: { userId: AUTH_userId },
+            orderBy: { id: 'asc' },
+            include: {
+                collectionFields: true,
+                items: {
+                    include: {
+                        likes: true
+                    }
+                }
+            }
+        });
+        res.send(collections);
+    } catch (error: Error | any) {
+        console.log(error);
+        res.status(500).send('Internal Server Error');
+    }
+};
+
+export const getCollectionInfo = async (req: Request, res: Response) => {
+    try {
+        const { collectionId } = req.params;
+        const collection = await prismaClient.collection.findUnique({
+            where: { id: Number(collectionId) },
+            include: {
+                collectionFields: true,
+                items: true,
+                user: true
+            }
+        });
+        res.send(collection);
+    } catch (error: Error | any) {
+        console.log(error);
+        res.status(500).send('Internal Server Error');
+    }
+};
+
+export const changeCollectionInfo = async (req: Request, res: Response) => {
+    try {
+        const { collectionId } = req.params;
+        const { title, description, theme, photoPath } = req.body;
+        await prismaClient.collection.update({
+            where: { id: Number(collectionId) },
+            data: {
+                title,
+                description,
+                theme,
+                photoPath
+            }
+        });
+        res.send('Collection info changed successfully');
+    } catch (error: Error | any) {
+        console.log(error);
+        res.status(500).send('Internal Server Error');
+    }
+};
+
+export const deleteCollection = async (req: Request, res: Response) => {
+    try {
+        const { collectionId } = req.params;
+        await prismaClient.collection.delete({
+            where: { id: Number(collectionId) }
+        });
+        res.send('Collection deleted successfully');
+    } catch (error: Error | any) {
+        console.log(error);
+        res.status(500).send('Internal Server Error');
+    }
+};
+
 export const createCollection = async (req: Request, res: Response) => {
     try {
-        const {} = req.body;
-        // const { authorization } = req.headers;
+        const { title, description, theme, photoPath, items, collectionFields, AUTH_userId } =
+            req.body;
+
+        await prismaClient.collection.create({
+            data: {
+                title,
+                description,
+                theme,
+                photoPath,
+                creationDate: new Date(),
+                userId: AUTH_userId,
+                collectionFields: {
+                    create: collectionFields
+                }
+            },
+            include: {
+                collectionFields: true
+            }
+        });
+
+        res.status(201).json('Collection created successfully');
     } catch (error: Error | any) {
         console.log(error);
         res.status(500).send('Internal Server Error');
@@ -47,8 +148,6 @@ export const saveCollectionPhoto = async (req: Request, res: Response) => {
         if (!postedFile) {
             return res.status(400).json('No files uploaded');
         }
-
-        console.log(postedFile);
 
         const fileName = postedFile.originalname;
 
@@ -75,7 +174,6 @@ export const saveCollectionPhoto = async (req: Request, res: Response) => {
         }
 
         const stream = fs.createWriteStream(newFilePath);
-        console.log(postedFile);
 
         stream.write(postedFile.buffer);
         stream.end();
@@ -84,5 +182,30 @@ export const saveCollectionPhoto = async (req: Request, res: Response) => {
     } catch (error) {
         console.log(error);
         return res.status(500).send('Internal Server Error');
+    }
+};
+
+export const getBiggestCollectionsByItems = async (req: Request, res: Response) => {
+    try {
+        const collections = await prismaClient.collection.findMany({
+            include: {
+                user: true,
+                items: {
+                    include: {
+                        likes: true
+                    }
+                }
+            },
+            orderBy: {
+                items: {
+                    _count: 'desc'
+                }
+            },
+            take: 6
+        });
+        res.send(collections);
+    } catch (error: Error | any) {
+        console.log(error);
+        res.status(500).send('Internal Server Error');
     }
 };

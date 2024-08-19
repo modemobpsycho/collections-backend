@@ -1,17 +1,28 @@
 import multer from 'multer';
 import express from 'express';
 import {
-    getCollections,
+    getAllCollections,
     createCollection,
-    saveCollectionPhoto
+    saveCollectionPhoto,
+    getMyCollections,
+    getCollectionInfo,
+    deleteCollection,
+    changeCollectionInfo,
+    getBiggestCollectionsByItems
 } from '../controllers/collectionController';
+import { checkAuth } from '../helpers/checkAuth';
 
 const upload = multer();
 
 const collectionRouter = express.Router();
 
-collectionRouter.get('/', getCollections);
-collectionRouter.post('/create', createCollection);
-collectionRouter.post('/saveCollectionPhoto', upload.single('file'), saveCollectionPhoto);
+collectionRouter.get('/getAll', getAllCollections);
+collectionRouter.get('/me', checkAuth, getMyCollections);
+collectionRouter.get('/biggest', getBiggestCollectionsByItems);
+collectionRouter.post('/create', checkAuth, createCollection);
+collectionRouter.post('/savePhoto', checkAuth, upload.single('file'), saveCollectionPhoto);
+collectionRouter.put('/:collectionId', checkAuth, changeCollectionInfo);
+collectionRouter.delete('/:collectionId', checkAuth, deleteCollection);
+collectionRouter.get('/:collectionId', getCollectionInfo);
 
 export default collectionRouter;

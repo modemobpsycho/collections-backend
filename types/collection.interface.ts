@@ -1,4 +1,7 @@
-export default interface ICollection {
+import { ICollectionFields } from './collectionFields.interface';
+import { IItems } from './items.interface';
+
+export interface ICollection {
     id: number;
     title: string;
     description: string;
@@ -6,4 +9,6 @@ export default interface ICollection {
     photoPath: string;
     creationDate: Date;
     userId: number;
+    fields: ICollectionFields[];
+    items: IItems[];
 }

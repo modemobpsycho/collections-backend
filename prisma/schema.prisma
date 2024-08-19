@@ -35,21 +35,9 @@ model Collection {
   photoPath    String
   creationDate DateTime
   userId       Int
-  user         User         @relation(fields: [userId], references: [id])
-  items        Item[]
-  fields       ItemFields[]
-}
-
-model Item {
-  id           Int          @id @default(autoincrement())
-  name         String
-  creationDate DateTime
-  collectionId Int
-  collection   Collection   @relation(fields: [collectionId], references: [id])
-  tags         Tag[]
-  comments     Comment[]
-  likes        Reaction[]
-  ItemFields   ItemFields[]
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items        Item[] 
+  collectionFields       CollectionFields[]
 }
 
 model Tag {
@@ -65,7 +53,19 @@ model Comment {
   userFullname String
   creationDate DateTime
   itemId       Int
-  item         Item     @relation(fields: [itemId], references: [id])
+  item         Item     @relation(fields: [itemId], references: [id], onDelete: Cascade)
+}
+
+model Item {
+  id           Int          @id @default(autoincrement())
+  name         String
+  creationDate DateTime
+  collectionId Int
+  collection   Collection   @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+  tags         Tag[]
+  comments     Comment[]
+  likes        Reaction[]
+  ItemFields   ItemFields[]
 }
 
 model ItemFields {
@@ -73,13 +73,18 @@ model ItemFields {
   fieldName          String
   stringFieldValue   String?
   doubleFieldValue   Int?
-  datetimeFieldValue DateTime?
+  dateFieldValue     DateTime?
   boolFieldValue     Boolean?
   itemId             Int
-  collectionId       Int?
-  item               Item        @relation(fields: [itemId], references: [id])
-  Collection         Collection? @relation(fields: [collectionId], references: [id])
+  item               Item        @relation(fields: [itemId], references: [id], onDelete: Cascade)
+}
 
+model CollectionFields {
+  id                 Int       @id @default(autoincrement())
+  fieldName          String
+  fieldType          String
+  collectionId       Int?
+  Collection         Collection? @relation(fields: [collectionId], references: [id], onDelete: Cascade)
 }
 
 model Reaction {
@@ -88,5 +93,5 @@ model Reaction {
   isLike       Boolean
   creationDate DateTime
   itemId       Int
-  item         Item     @relation(fields: [itemId], references: [id])
+  item         Item     @relation(fields: [itemId], references: [id], onDelete: Cascade)
 }

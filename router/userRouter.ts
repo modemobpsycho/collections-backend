@@ -1,18 +1,23 @@
 import express from 'express';
 import {
-    getUsers,
+    getAllUsers,
     createUser,
     loginUser,
     updateUser,
-    getCurrentUser
+    getCurrentUser,
+    updateUserAdmin,
+    deleteUser
 } from '../controllers/userController';
+import { checkAuth } from '../helpers/checkAuth';
 
 const userRouter = express.Router();
 
-userRouter.get('/', getUsers);
+userRouter.get('/', checkAuth, getAllUsers);
 userRouter.post('/signup', createUser);
 userRouter.post('/login', loginUser);
-userRouter.put('/update', updateUser);
-userRouter.get('/me', getCurrentUser);
+userRouter.put('/update', checkAuth, updateUser);
+userRouter.get('/me', checkAuth, getCurrentUser);
+userRouter.delete('/delete', checkAuth, deleteUser);
+userRouter.put('/update-admin', checkAuth, updateUserAdmin);
 
 export default userRouter;

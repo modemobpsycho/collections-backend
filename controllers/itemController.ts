@@ -1,5 +1,6 @@
 import { Response, Request } from 'express';
 import { prismaClient } from '../prisma/database';
+import { Prisma } from '@prisma/client';
 
 export const getAllItems = async (req: Request, res: Response) => {
     try {
@@ -27,7 +28,9 @@ export const getItem = async (req: Request, res: Response) => {
             include: {
                 ItemFields: true,
                 tags: true,
-                comments: true,
+                comments: {
+                    orderBy: { creationDate: 'asc' }
+                },
                 likes: true,
                 collection: {
                     include: {
@@ -36,7 +39,6 @@ export const getItem = async (req: Request, res: Response) => {
                 }
             }
         });
-        console.log(item);
         res.send(item);
     } catch (error: Error | any) {
         console.log(error);
@@ -76,8 +78,9 @@ export const addItem = async (req: Request, res: Response) => {
 export const updateItem = async (req: Request, res: Response) => {
     try {
         const { itemId } = req.params;
+        console.log(req.body);
         const { name, tags, creationDate, ItemFields } = req.body;
-
+        const test: Prisma.ItemFieldsUpdateManyMutationInput = { fieldName: 'test' };
         const item = await prismaClient.item.update({
             where: { id: Number(itemId) },
             data: {
@@ -88,8 +91,10 @@ export const updateItem = async (req: Request, res: Response) => {
                     create: tags
                 },
                 ItemFields: {
-                    deleteMany: {},
-                    create: ItemFields
+                    deleteMany: { itemId: Number(itemId) },
+                    createMany: {
+                        data: ItemFields
+                    }
                 }
             },
             include: {
@@ -107,10 +112,82 @@ export const updateItem = async (req: Request, res: Response) => {
 export const deleteItem = async (req: Request, res: Response) => {
     try {
         const { itemId } = req.params;
+        await prismaClient.tag.deleteMany({
+            where: { itemId: Number(itemId) }
+        });
         await prismaClient.item.delete({
             where: { id: Number(itemId) }
         });
         res.send('Item deleted successfully');
+    } catch (error: Error | any) {
+        console.log(error);
+        res.status(500).send('Internal Server Error');
+    }
+};
+
+export const getLastItems = async (req: Request, res: Response) => {
+    try {
+        const limit = req.params.limit;
+        const lastItems = await prismaClient.item.findMany({
+            take: Number(limit),
+            orderBy: {
+                creationDate: 'desc'
+            },
+            include: {
+                comments: true,
+                likes: true,
+                collection: true
+            }
+        });
+        res.json(lastItems);
+    } catch (error: Error | any) {
+        console.log(error);
+        res.status(500).send('Internal Server Error');
+    }
+};
+
+export const searchItems = async (req: Request, res: Response) => {
+    try {
+        const { contain, limit } = req.params;
+        const items = await prismaClient.item.findMany({
+            where: {
+                OR: [
+                    {
+                        name: {
+                            contains: contain,
+                            mode: 'insensitive'
+                        }
+                    },
+                    {
+                        tags: {
+                            some: {
+                                tag: {
+                                    contains: contain,
+                                    mode: 'insensitive'
+                                }
+                            }
+                        }
+                    },
+                    {
+                        collection: {
+                            title: {
+                                contains: contain,
+                                mode: 'insensitive'
+                            }
+                        }
+                    }
+                ]
+            },
+            include: {
+                ItemFields: true,
+                tags: true,
+                likes: true,
+                collection: true,
+                comments: true
+            },
+            take: Number(limit)
+        });
+        res.send(items);
     } catch (error: Error | any) {
         console.log(error);
         res.status(500).send('Internal Server Error');

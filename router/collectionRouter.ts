@@ -16,7 +16,7 @@ const upload = multer();
 
 const collectionRouter = express.Router();
 
-collectionRouter.get('/getAll', getAllCollections);
+collectionRouter.get('/getAll/:limit', getAllCollections);
 collectionRouter.get('/me', checkAuth, getMyCollections);
 collectionRouter.get('/biggest', getBiggestCollectionsByItems);
 collectionRouter.post('/create', checkAuth, createCollection);

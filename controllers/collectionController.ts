@@ -9,7 +9,10 @@ const photoPath = MyConfig.PHOTO_PATH;
 
 export const getAllCollections = async (req: Request, res: Response) => {
     try {
+        const { limit } = req.params;
+
         const collections = await prismaClient.collection.findMany({
+            take: Number(limit),
             orderBy: { id: 'asc' },
             include: {
                 user: true,
@@ -57,7 +60,14 @@ export const getCollectionInfo = async (req: Request, res: Response) => {
             where: { id: Number(collectionId) },
             include: {
                 collectionFields: true,
-                items: true,
+                items: {
+                    include: {
+                        likes: true,
+                        ItemFields: true,
+                        tags: true,
+                        comments: true
+                    }
+                },
                 user: true
             }
         });

@@ -6,6 +6,7 @@
 
 generator client {
   provider = "prisma-client-js"
+  previewFeatures = ["fullTextSearch"]
 }
 
 datasource db {
@@ -43,7 +44,10 @@ model Collection {
 model Tag {
   id    Int    @id @default(autoincrement())
   tag   String
-  items Item[]
+  itemId   Int
+  item     Item     @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  @@index([tag])
 }
 
 model Comment {
@@ -62,7 +66,7 @@ model Item {
   creationDate DateTime
   collectionId Int
   collection   Collection   @relation(fields: [collectionId], references: [id], onDelete: Cascade)
-  tags         Tag[]
+  tags         Tag[]  
   comments     Comment[]
   likes        Reaction[]
   ItemFields   ItemFields[]

@@ -34,7 +34,9 @@ export const getAllCollections = async (req: Request, res: Response) => {
 export const getMyCollections = async (req: Request, res: Response) => {
     try {
         const { AUTH_userId } = req.body;
+        const { limit } = req.params;
         const collections = await prismaClient.collection.findMany({
+            take: Number(limit),
             where: { userId: AUTH_userId },
             orderBy: { id: 'asc' },
             include: {

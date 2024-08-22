@@ -78,9 +78,7 @@ export const addItem = async (req: Request, res: Response) => {
 export const updateItem = async (req: Request, res: Response) => {
     try {
         const { itemId } = req.params;
-        console.log(req.body);
         const { name, tags, creationDate, ItemFields } = req.body;
-        const test: Prisma.ItemFieldsUpdateManyMutationInput = { fieldName: 'test' };
         const item = await prismaClient.item.update({
             where: { id: Number(itemId) },
             data: {

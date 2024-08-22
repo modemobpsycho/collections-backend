@@ -15,8 +15,7 @@ const server = http.createServer(app);
 
 const io = new Server(server, {
     cors: {
-        origin: 'http://localhost:5173',
-        methods: ['GET', 'POST']
+        origin: '*'
     }
 });
 
@@ -25,7 +24,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.static(__dirname + '/photos'));
 
 const corsOptions = {
-    origin: ['https://itra-final-task-frontend.vercel.app', 'http://localhost:5173']
+    origin: ['https://collections-taratuta.netlify.app', 'http://localhost:5173']
 };
 
 app.use(cors(corsOptions));

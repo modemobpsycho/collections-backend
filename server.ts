@@ -1,12 +1,24 @@
 import express from 'express';
 import cors from 'cors';
+import http from 'http';
+import { Server } from 'socket.io';
+import { initSocketRoutes } from './router/socketRouter';
 import userRouter from './router/userRouter';
 import collectionRouter from './router/collectionRouter';
 import itemRouter from './router/itemRouter';
 import commentRouter from './router/commentRouter';
 import reactionRouter from './router/reactionRouter';
+import tagRouter from './router/tagRouter';
 
 const app = express();
+const server = http.createServer(app);
+
+const io = new Server(server, {
+    cors: {
+        origin: 'http://localhost:5173',
+        methods: ['GET', 'POST']
+    }
+});
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -23,10 +35,12 @@ app.use('/api/collection', collectionRouter);
 app.use('/api/item', itemRouter);
 app.use('/api/comment', commentRouter);
 app.use('/api/reaction', reactionRouter);
+app.use('/api/tag', tagRouter);
+initSocketRoutes(io);
 
 const PORT = process.env.PORT || 3000;
 
-app.listen(PORT, () => {
+server.listen(PORT, () => {
     console.log(`Server is running on localhost:${PORT}`);
 });
 

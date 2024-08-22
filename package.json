@@ -14,14 +14,17 @@
     "license": "ISC",
     "description": "",
     "dependencies": {
+        "@netlify/functions": "^2.8.1",
         "@prisma/client": "^5.17.0",
         "bcrypt": "^5.1.1",
         "cors": "^2.8.5",
         "dotenv": "^16.4.5",
         "express": "^4.19.2",
+        "google-auth-library": "^9.14.0",
         "itra-final-task-backend": "file:",
         "jsonwebtoken": "^9.0.2",
-        "multer": "^2.0.0-rc.4",
+        "multer": "^1.4.4-lts.1",
+        "serverless-http": "^3.2.0",
         "socket.io": "^4.7.5"
     },
     "devDependencies": {

@@ -3,10 +3,10 @@ import { MyConfig } from '../config/config';
 import { prismaClient } from '../prisma/database';
 import TokenService from '../service/tokenService';
 import bcrypt from 'bcrypt';
-import IUser from '../types/user.interface';
 import IUserJwtPayload from '../types/userJwtPayload';
 import { constants } from '../helpers/constants';
 import { decode, JwtPayload } from 'jsonwebtoken';
+import { JWT } from 'google-auth-library';
 
 const tokenService = new TokenService();
 const salt = MyConfig.SALT;
@@ -26,6 +26,15 @@ export const getAllUsers = async (req: Request, res: Response) => {
 export const createUser = async (req: Request, res: Response) => {
     try {
         const { email, fullName, password } = req.body;
+
+        if (!email || !fullName || !password) {
+            return res.status(400).json({ message: 'Missing required fields' });
+        }
+
+        const existingUser = await prismaClient.user.findUnique({ where: { email } });
+        if (existingUser) {
+            return res.status(400).json({ message: 'Email already exists' });
+        }
 
         const hashedPassword = await bcrypt.hash(password, salt!);
 
@@ -47,9 +56,6 @@ export const createUser = async (req: Request, res: Response) => {
 
         return res.status(201).json({ user });
     } catch (error: Error | any) {
-        if (error.code === 'P2002' && error.meta?.target?.includes('email')) {
-            return res.status(400).json({ message: 'Email already exists' });
-        }
         console.error('Error during user creation:', error);
         return res.status(500).json({ message: 'Internal Server Error' });
     }
@@ -95,6 +101,74 @@ export const loginUser = async (req: Request, res: Response) => {
     }
 };
 
+export const loginUserGoogle = async (req: Request, res: Response) => {
+    try {
+        const { name, sub, email, email_verified } = req.body.userInfo;
+
+        if (!email_verified) {
+            return res.status(401).json({ message: 'Your email not verified' });
+        }
+
+        const user = await prismaClient.user.findUnique({
+            where: { email }
+        });
+
+        if (!user) {
+            const hashedPassword = await bcrypt.hash(sub, salt!);
+            const payload = { fullName: name, email: email };
+
+            const accessToken = tokenService.generateAccessToken(payload);
+            const refreshToken = tokenService.generateRefreshToken(payload);
+
+            await prismaClient.user.create({
+                data: {
+                    email: email,
+                    fullName: name,
+                    role: 0,
+                    access: true,
+                    refreshToken: refreshToken,
+                    password: hashedPassword,
+                    lastLogin: new Date(),
+                    joinDate: new Date()
+                }
+            });
+
+            res.cookie('refreshToken', refreshToken, {
+                httpOnly: true,
+                secure: true,
+                maxAge: constants.maxAgeCookie
+            });
+
+            return res.status(200).json(accessToken);
+        } else {
+            if (!user.access) {
+                return res.status(403).json({ message: 'User account is blocked' });
+            }
+
+            const payload = { fullName: user.fullName, email: user.email };
+
+            const accessToken = tokenService.generateAccessToken(payload);
+            const refreshToken = tokenService.generateRefreshToken(payload);
+
+            await prismaClient.user.update({
+                where: { id: user.id },
+                data: { lastLogin: new Date(), refreshToken }
+            });
+
+            res.cookie('refreshToken', refreshToken, {
+                httpOnly: true,
+                secure: true,
+                maxAge: constants.maxAgeCookie
+            });
+
+            return res.status(200).json(accessToken);
+        }
+    } catch (error) {
+        console.error('Error during login:', error);
+        return res.status(500).json({ message: 'Internal Server Error' });
+    }
+};
+
 export const updateUser = async (req: Request, res: Response) => {
     try {
         const { email, fullName, oldPassword, newPassword } = req.body;
@@ -119,12 +193,19 @@ export const updateUser = async (req: Request, res: Response) => {
             return res.status(401).json({ message: 'Invalid password' });
         }
 
-        const hashedPassword = await bcrypt.hash(newPassword, salt!);
+        if (newPassword.trim() !== '') {
+            const hashedPassword = await bcrypt.hash(newPassword, salt!);
 
-        await prismaClient.user.update({
-            where: { id: user.id },
-            data: { fullName, email, password: hashedPassword }
-        });
+            await prismaClient.user.update({
+                where: { id: user.id },
+                data: { fullName, email, password: hashedPassword }
+            });
+        } else {
+            await prismaClient.user.update({
+                where: { id: user.id },
+                data: { fullName, email }
+            });
+        }
 
         const payload = { fullName: user.fullName, email: user.email };
         const accessToken = tokenService.generateAccessToken(payload);

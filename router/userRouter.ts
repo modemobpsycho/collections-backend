@@ -3,6 +3,7 @@ import {
     getAllUsers,
     createUser,
     loginUser,
+    loginUserGoogle,
     updateUser,
     getCurrentUser,
     updateUserAdmin,
@@ -15,6 +16,7 @@ const userRouter = express.Router();
 userRouter.get('/', checkAuth, getAllUsers);
 userRouter.post('/signup', createUser);
 userRouter.post('/login', loginUser);
+userRouter.post('/login-google', loginUserGoogle);
 userRouter.put('/update', checkAuth, updateUser);
 userRouter.get('/me', checkAuth, getCurrentUser);
 userRouter.delete('/delete', checkAuth, deleteUser);

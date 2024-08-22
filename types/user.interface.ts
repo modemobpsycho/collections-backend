@@ -1,5 +1,3 @@
-import ICollection from './collection.interface';
-
 export default interface IUser {
     id: number;
     email: string;

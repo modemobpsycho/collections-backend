@@ -17,7 +17,7 @@ userRouter.get('/', checkAuth, getAllUsers);
 userRouter.post('/signup', createUser);
 userRouter.post('/login', loginUser);
 userRouter.post('/login-google', loginUserGoogle);
-userRouter.put('/update', checkAuth, updateUser);
+userRouter.put('/update', checkAuth, updateUser, checkAuth);
 userRouter.get('/me', checkAuth, getCurrentUser);
 userRouter.delete('/delete', checkAuth, deleteUser);
 userRouter.put('/update-admin', checkAuth, updateUserAdmin);

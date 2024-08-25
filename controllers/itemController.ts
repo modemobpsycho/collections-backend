@@ -50,7 +50,6 @@ export const addItem = async (req: Request, res: Response) => {
     try {
         const { collectionId } = req.params;
         const { name, tags, creationDate, ItemFields } = req.body;
-        console.log(req.body);
         const item = await prismaClient.item.create({
             data: {
                 name,

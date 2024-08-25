@@ -171,43 +171,59 @@ export const loginUserGoogle = async (req: Request, res: Response) => {
 
 export const updateUser = async (req: Request, res: Response) => {
     try {
-        const { email, fullName, oldPassword, newPassword } = req.body;
-        const { authorization } = req.headers;
-
-        const oldPayload = decode(authorization?.slice(7) as string);
-
-        if (!oldPayload) {
-            return res.status(401).json({ message: 'Unauthorized' });
-        }
+        const { email, fullName, oldPassword, newPassword, AUTH_userId } = req.body;
 
         const user = await prismaClient.user.findUnique({
-            where: { email: (oldPayload as JwtPayload).email }
+            where: { id: AUTH_userId }
         });
 
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
         }
 
+        const userToCheckEmail = await prismaClient.user.findUnique({
+            where: { email }
+        });
+
+        if (userToCheckEmail && userToCheckEmail.id !== user?.id) {
+            return res.status(400).json({ message: 'Email already in use' });
+        }
+
+        const hashedNewPassword = await bcrypt.hash(newPassword, salt!);
+        const hashedOldPassword = await bcrypt.hash(oldPassword, salt!);
+
+        if (
+            user.email === email &&
+            user.fullName === fullName &&
+            user.password === hashedOldPassword &&
+            newPassword.trim() === ''
+        ) {
+            return res.status(400).json({ message: 'Nothing to update' });
+        }
+
         const isPasswordValid = await bcrypt.compare(oldPassword, user.password);
+
         if (!isPasswordValid) {
             return res.status(401).json({ message: 'Invalid password' });
         }
 
-        if (newPassword.trim() !== '') {
-            const hashedPassword = await bcrypt.hash(newPassword, salt!);
+        const newUser = await prismaClient.user.update({
+            where: { id: user.id },
+            data: {
+                email: email,
+                fullName: fullName,
+                password: newPassword.trim() === '' ? hashedOldPassword : hashedNewPassword
+            }
+        });
 
-            await prismaClient.user.update({
-                where: { id: user.id },
-                data: { fullName, email, password: hashedPassword }
-            });
-        } else {
-            await prismaClient.user.update({
-                where: { id: user.id },
-                data: { fullName, email }
-            });
-        }
+        await prismaClient.comment.updateMany({
+            where: { userId: user.id },
+            data: {
+                userFullname: fullName
+            }
+        });
 
-        const payload = { fullName: user.fullName, email: user.email };
+        const payload = { fullName: newUser.fullName, email: newUser.email };
         const accessToken = tokenService.generateAccessToken(payload);
         const refreshToken = tokenService.generateRefreshToken(payload);
 

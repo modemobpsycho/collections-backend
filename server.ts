@@ -9,6 +9,7 @@ import itemRouter from './router/itemRouter';
 import commentRouter from './router/commentRouter';
 import reactionRouter from './router/reactionRouter';
 import tagRouter from './router/tagRouter';
+import jiraRouter from './router/jiraRouter';
 
 const app = express();
 const server = http.createServer(app);
@@ -35,6 +36,7 @@ app.use('/api/item', itemRouter);
 app.use('/api/comment', commentRouter);
 app.use('/api/reaction', reactionRouter);
 app.use('/api/tag', tagRouter);
+app.use('/api/jira', jiraRouter);
 initSocketRoutes(io);
 
 const PORT = process.env.PORT || 3000;

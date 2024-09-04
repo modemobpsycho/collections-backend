@@ -100,3 +100,9 @@ model Reaction {
   itemId       Int
   item         Item     @relation(fields: [itemId], references: [id], onDelete: Cascade)
 }
+
+model JiraTickets {
+  id           Int      @id @default(autoincrement())
+  userId       Int
+  ticketId     String
+}

@@ -5,7 +5,8 @@ import { prismaClient } from '../prisma/database';
 
 export const createTicket = async (req: Request, res: Response) => {
     try {
-        const { title, description, type, priority, url } = req.body;
+        const { title, description, type, priority, url, AUTH_JIRA_ID } = req.body;
+
         if (!title || !description || !type || !priority || !url) {
             return res.status(400).send('Bad Request');
         }
@@ -100,6 +101,16 @@ export const createTicket = async (req: Request, res: Response) => {
                 },
                 priority: {
                     name: priority
+                },
+                reporter: {
+                    id: AUTH_JIRA_ID
+                },
+                assignee: {
+                    id: `${
+                        type === 'Question'
+                            ? MyConfig.JIRA_QA_ACCOUNT_ID
+                            : MyConfig.JIRA_DEV_ACCOUNT_ID
+                    }`
                 }
             }
         };
@@ -126,10 +137,10 @@ export const getAllTickets = async (req: Request, res: Response) => {
         const { AUTH_userId } = req.body;
 
         const ticketsFromDB = await prismaClient.jiraTickets.findMany({
+            take: Number(limit),
             where: {
                 userId: Number(AUTH_userId)
-            },
-            take: Number(limit)
+            }
         });
 
         const ticketIds = ticketsFromDB.map(({ ticketId }) => ticketId);
@@ -166,6 +177,7 @@ export const getAllTickets = async (req: Request, res: Response) => {
             issueIconUrl: ticket.fields.issuetype.iconUrl,
             priority: ticket.fields.priority.name,
             priorityIconUrl: ticket.fields.priority.iconUrl,
+            assignee: ticket.fields.assignee?.displayName,
             created: ticket.fields.created,
             updated: ticket.fields.updated,
             comments: ticket.fields.comment?.comments || []

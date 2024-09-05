@@ -11,5 +11,7 @@ export const MyConfig = {
     GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID,
     JIRA_API_KEY: process.env.JIRA_API_KEY,
     JIRA_EMAIL: process.env.JIRA_EMAIL,
-    JIRA_PASSWORD: process.env.JIRA_PASSWORD
+    JIRA_PASSWORD: process.env.JIRA_PASSWORD,
+    JIRA_QA_ACCOUNT_ID: process.env.JIRA_QA_ACCOUNT_ID,
+    JIRA_DEV_ACCOUNT_ID: process.env.JIRA_DEV_ACCOUNT_ID
 };
